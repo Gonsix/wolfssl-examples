@@ -1,0 +1,27 @@
+WOLFROOT = ../../../wolfssl
+
+CFLAGS = -DWOLFSSL_USER_SETTINGS -I. -I$(WOLFROOT) -Os -g
+
+OBJ =\
+	$(WOLFROOT)/wolfcrypt/src/ecc.o\
+	$(WOLFROOT)/wolfcrypt/src/sp_int.o\
+	$(WOLFROOT)/wolfcrypt/src/sha256.o\
+	$(WOLFROOT)/wolfcrypt/src/hash.o\
+	$(WOLFROOT)/wolfcrypt/src/random.o\
+	$(WOLFROOT)/wolfcrypt/src/asn.o\
+	$(WOLFROOT)/wolfcrypt/src/wc_port.o\
+	$(WOLFROOT)/wolfcrypt/src/coding.o\
+	$(WOLFROOT)/wolfcrypt/src/wolfmath.o\
+	$(WOLFROOT)/wolfcrypt/src/memory.o\
+
+
+
+all : ecc_sign_verify
+ecc_sign_verify: $(OBJ)
+	$(CC) $(CFLAGS) -o ecc_sign_verify ecc_sign_verify.c $(OBJ)
+
+clean:
+	rm $(OBJ) ecc_sign_verify
+
+size :
+	size $(OBJ)
