@@ -11,6 +11,8 @@ OBJ =\
 	$(WOLFROOT)/wolfcrypt/src/asn.o\
 	$(WOLFROOT)/wolfcrypt/src/wc_port.o\
 	$(WOLFROOT)/wolfcrypt/src/coding.o\
+	$(WOLFROOT)/wolfcrypt/src/sp_c32.o\
+	$(WOLFROOT)/wolfcrypt/src/tfm.o\
 
 all : verify sign
 verify: $(OBJ)

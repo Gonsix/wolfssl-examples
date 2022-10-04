@@ -19,7 +19,7 @@
 #define NO_DES3
 #define NO_AES
 #define WOLFSSL_SP_NO_DYN_STACK
-#define WOLFSSL_SP_SMALL
+// #define WOLFSSL_SP_SMALL
 
 /* asn */
 #define NO_ASN_TIME
@@ -28,4 +28,6 @@
 
 /* ecc */
 #define HAVE_ECC
+#define HAVA_ALL_CURVES
+// #define WOLFSSL_HAVE_SP_ECC /* remove sp_c32.o from OBJ in file mk_minimum if Disabled */
 

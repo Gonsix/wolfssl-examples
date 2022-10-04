@@ -34,19 +34,16 @@
 
 #include "rsa_pub_2048.h"
 #include "signature.h"
+// #include <wolfssl/wolfcrypt/ftm.h>
 
-
+#define LOOP 10000
 /* Maximum bound on digest algorithm encoding around digest */
 #define MAX_ENC_ALG_SZ      32
 
-/* Main entry point.
- * Verifies the signature with the message and RSA public key.
- *
- * argc  [in]  Count of command line arguments.
- * argv  [in]  Command line argument vector.
+/* Verifies the signature with the message and RSA public key.
  * Returns 0 on success and 1 otherwise.
  */
-int main(int argc, char* argv[])
+int verify()
 {
     int            ret = 0;
     Sha256         sha256;
@@ -57,9 +54,12 @@ int main(int argc, char* argv[])
     unsigned char  digest[WC_SHA256_DIGEST_SIZE];
     unsigned char  encSig[WC_SHA256_DIGEST_SIZE + MAX_ENC_ALG_SZ];
     word32         encSigLen = 0;
-    unsigned char* decSig = NULL;
+    unsigned char  decSig[sizeof(rsa_sig_2048)];
     word32         decSigLen = 0;
 
+    long           cpu_time;
+    double         start_sec;
+    double         end_sec;
     /* Calculate SHA-256 digest of message */
     if (ret == 0)
         ret = wc_InitSha256(&sha256);
@@ -88,24 +88,36 @@ int main(int argc, char* argv[])
                                     sizeof(public_key_2048));
     }
 
-    /* Verify the signature by decrypting the value. */
-    if (ret == 0) {
-        decSigLen = wc_RsaSSL_VerifyInline(rsa_sig_2048, sizeof(rsa_sig_2048),
-                                           &decSig, &rsaKey);
-        if ((int)decSigLen < 0)
-            ret = (int)decSigLen;
-    }
-    /* Check the decrypted result matches the encoded digest. */
-    if (ret == 0 && encSigLen != decSigLen)
-        ret = -1;
-    if (ret == 0 && XMEMCMP(encSig, decSig, encSigLen) != 0)
-        ret = -1;
+    /* bench mark*/
+    cpu_time = clock();
+    start_sec = (double)cpu_time / CLOCKS_PER_SEC;
+    for ( int i = 0; i < LOOP; i++ ){
+        /* Verify the signature by decrypting the value. */
+        if (ret == 0) {
+            decSigLen = wc_RsaSSL_Verify(rsa_sig_2048, sizeof(rsa_sig_2048),
+                                            decSig, sizeof(decSig), &rsaKey);
+            if ((int)decSigLen < 0)
+                ret = (int)decSigLen;
+        }
+        /* Check the decrypted result matches the encoded digest. */
+        if (ret == 0 && encSigLen != decSigLen)
+            ret = -1;
+        if (ret == 0 && XMEMCMP(encSig, decSig, encSigLen) != 0)
+            ret = -1;
+        
+        if(ret == 0){}
+        else {
+            printf("Invalid Signature!\n");
+            exit(ret);
+        }
 
-    /* Report on the verification */
-    if (ret == 0)
-        fprintf(stderr, "Verified\n");
-    else
-        fprintf(stderr, "Failure\n");
+    }
+    cpu_time = clock();
+    end_sec = (double)cpu_time / CLOCKS_PER_SEC;
+    printf("loop: %d\n", LOOP);
+    printf("time: %f seconds,\n", end_sec - start_sec );
+    printf("average: %f seconds,\n", (end_sec - start_sec)/LOOP );
+    /* end benchmark*/
 
     /* Free the data structures */
     if (pRsaKey != NULL)
@@ -114,5 +126,21 @@ int main(int argc, char* argv[])
         wc_Sha256Free(pSha256);
 
     return ret == 0 ? 0 : 1;
+}
+
+int main(){
+#if defined(WOLFSSL_HAVE_SP_RSA)
+    printf("===============================================================\n");
+    printf("Enabled WOLFSSL SP RSA \n");
+    printf("---------------------------------------------------------------\n");
+    verify();
+    printf("===============================================================\n");
+#else 
+    printf("===============================================================\n");
+    printf("Disabled WOLFSSL SP RSA \n");
+    printf("---------------------------------------------------------------\n");
+    verify();
+    printf("===============================================================\n");
+#endif
 }
 

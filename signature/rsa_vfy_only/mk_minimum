@@ -8,7 +8,7 @@ OBJ =\
 	$(WOLFROOT)/wolfcrypt/src/sha256.o\
 	$(WOLFROOT)/wolfcrypt/src/hash.o\
 	$(WOLFROOT)/wolfcrypt/src/random.o\
-
+	# $(WOLFROOT)/wolfcrypt/src/sp_c32.o\
 all : verify
 verify: $(OBJ)
 	$(CC) $(CFLAGS) -o verify verify.c dummy.c $(OBJ)

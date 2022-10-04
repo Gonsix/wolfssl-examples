@@ -103,6 +103,25 @@ unsigned char rsa_sig_2048[] = {
     0xe0, 0xdc, 0x7c, 0xe8, 0x41, 0xb0, 0xeb, 0x45,
 };
 
+void print_buffer(char* name, unsigned char* data, word32 len)
+{
+    word32 i;
+
+    printf("unsigned char %s[] = {\n", name);
+    for (i = 0; i < len; i++) {
+        if ((i % 8) == 0)
+            printf("   ");
+        printf(" 0x%02x,", data[i]);
+        if ((i % 8) == 7)
+            printf("\n");
+    }
+    if ((i % 8) != 0)
+        printf("\n");
+    printf("};\n");
+
+}
+
+
 /* ASN.1 encoding of digest algorithm before hash */
 #define ENC_ALG_SZ     19
 
@@ -120,7 +139,7 @@ int main(int argc, char* argv[])
     Sha256*        pSha256 = NULL;
     RsaKey         rsaKey;
     RsaKey*        pRsaKey = NULL;
-    unsigned char* decSig = NULL;
+    unsigned char  decSig[sizeof(rsa_sig_2048)];
     word32         decSigLen = 0;
     unsigned char  encSig[ENC_ALG_SZ + WC_SHA256_DIGEST_SIZE] = {
         0x30, 0x31, 0x30, 0x0D, 0x06, 0x09, 0x60, 0x86,
@@ -152,8 +171,8 @@ int main(int argc, char* argv[])
 
     /* Verify the signature by decrypting the value. */
     if (ret == 0) {
-        decSigLen = wc_RsaSSL_VerifyInline(rsa_sig_2048, sizeof(rsa_sig_2048),
-                                           &decSig, &rsaKey);
+        decSigLen = wc_RsaSSL_Verify(rsa_sig_2048, sizeof(rsa_sig_2048),
+                                           decSig, sizeof(decSig), &rsaKey);
         if ((int)decSigLen < 0)
             ret = (int)decSigLen;
     }
@@ -169,6 +188,7 @@ int main(int argc, char* argv[])
         wc_FreeRsaKey(pRsaKey);
     if (pSha256 != NULL)
         wc_Sha256Free(pSha256);
+    printf("ret = %d\n",ret);
     return ret == 0 ? 0 : 1;
 }
 
