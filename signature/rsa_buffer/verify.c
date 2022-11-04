@@ -25,8 +25,9 @@
  * "signature.h", used by this program, can be generated using "sign.c".
  */
 
-// #include <wolfssl/options.h>
+#include <wolfssl/options.h>
 #include "user_settings.h"
+#include <wolfssl/ssl.h>
 #include <wolfssl/wolfcrypt/rsa.h>
 #include <wolfssl/wolfcrypt/sha256.h>
 #include <wolfssl/wolfcrypt/asn.h>
@@ -34,7 +35,7 @@
 
 #include "rsa_pub_2048.h"
 #include "signature.h"
-// #include <wolfssl/wolfcrypt/ftm.h>
+#include<wolfssl/test.h>
 
 #define LOOP 10000
 /* Maximum bound on digest algorithm encoding around digest */
@@ -57,9 +58,13 @@ int verify()
     unsigned char  decSig[sizeof(rsa_sig_2048)];
     word32         decSigLen = 0;
 
-    long           cpu_time;
-    double         start_sec;
-    double         end_sec;
+    double start, total_time;
+    #define BENCH_TIME_SEC 3
+    int count;
+
+#ifdef DEBUG_MEMORY
+    InitMemoryTracker();
+#endif
     /* Calculate SHA-256 digest of message */
     if (ret == 0)
         ret = wc_InitSha256(&sha256);
@@ -88,10 +93,13 @@ int verify()
                                     sizeof(public_key_2048));
     }
 
-    /* bench mark*/
-    cpu_time = clock();
-    start_sec = (double)cpu_time / CLOCKS_PER_SEC;
-    for ( int i = 0; i < LOOP; i++ ){
+#ifdef BENCHMARK 
+    count = 0;
+    printf("Running benchmark...\n");
+    printf("Please Wait %.2f seconds\n", (double)BENCH_TIME_SEC);
+    start = current_time(0);// 1 0
+    while( BENCH_TIME_SEC > (total_time = current_time(0) - start ) ){
+#endif
         /* Verify the signature by decrypting the value. */
         if (ret == 0) {
             decSigLen = wc_RsaSSL_Verify(rsa_sig_2048, sizeof(rsa_sig_2048),
@@ -104,43 +112,56 @@ int verify()
             ret = -1;
         if (ret == 0 && XMEMCMP(encSig, decSig, encSigLen) != 0)
             ret = -1;
-        
-        if(ret == 0){}
-        else {
+
+        if(ret != 0){
             printf("Invalid Signature!\n");
-            exit(ret);
+            goto finish;
         }
 
+#ifdef BENCHMARK
+        count++;
     }
-    cpu_time = clock();
-    end_sec = (double)cpu_time / CLOCKS_PER_SEC;
-    printf("loop: %d\n", LOOP);
-    printf("time: %f seconds,\n", end_sec - start_sec );
-    printf("average: %f seconds,\n", (end_sec - start_sec)/LOOP );
-    /* end benchmark*/
+   
+    printf("Takes %1.2f Sec for %d times,    %6.2f Cycles/sec\n", total_time, count, count/total_time);
+    printf("Finished Benchmark \n");
+#else 
+    printf("Verified\n");
+#endif
 
+finish: 
     /* Free the data structures */
     if (pRsaKey != NULL)
         wc_FreeRsaKey(pRsaKey);
     if (pSha256 != NULL)
         wc_Sha256Free(pSha256);
 
-    return ret == 0 ? 0 : 1;
+#ifdef DEBUG_MEMORY
+    ShowMemoryTracker();
+    CleanupMemoryTracker();
+#endif 
+    return ret;
 }
 
 int main(){
-#if defined(WOLFSSL_HAVE_SP_RSA)
-    printf("===============================================================\n");
-    printf("Enabled WOLFSSL SP RSA \n");
+#ifdef BENCHMARK
     printf("---------------------------------------------------------------\n");
-    verify();
-    printf("===============================================================\n");
+#if defined(WOLFSSL_HAVE_SP_RSA) && !defined(SP_X86_64_FLAG) && !defined(SP_ARM64_FLAG)
+    printf("Enabled WOLFSSL_HAVE_SP_RSA \n");
+#elif defined(SP_X86_64_FLAG)
+    printf("Enabled WOLFSSL_SP_X86_64\n");
+#elif defined(SP_ARM64_FLAG)
+    printf("Enabled WOLFSSL_SP_ARM64\n");
+#elif defined(TFM_FLAG)
+    printf("Enabled TFM \n");
+#endif
+    printf("---------------------------------------------------------------\n");
+#endif /* BENCHMARK*/
+
+#ifdef DEBUG_MEMORY
+    return StackSizeCheck(NULL, (thread_func)verify);
 #else 
-    printf("===============================================================\n");
-    printf("Disabled WOLFSSL SP RSA \n");
-    printf("---------------------------------------------------------------\n");
-    verify();
-    printf("===============================================================\n");
+
+
+    return verify();
 #endif
 }
-

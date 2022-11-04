@@ -21,4 +21,5 @@
 #define NO_DES3
 #define NO_AES
 
-#define WOLFSSL_SP_NO_DYN_STACK
+// #define WOLFSSL_SP_NO_DYN_STACK
+#define USE_FAST_MATH

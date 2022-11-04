@@ -1,14 +1,72 @@
+# Signature Options and APIs
 "sigunature" directry includes following examples in the table.
-​
-|Scheme|Directry|Description|||
+
+
+|Scheme|Directry|Description|
 |---|---|---|
-|RSA|||
-||||
-|ECDSA|||
+|RSA|signature/rsa_vfy_only/verify |verify signature|
+||signature/rsa_buffer/sign|sign input message|
+||signature/rsa_buffer/verify| |
+|ECDSA|signature/ecc-sign-verify|sign msg and verify signature|
 ​
 
+# How to costomize build
 
-Talbe 1: Hash algorithms for PKCS#1 Signature
+
+```
+make -f mk_min
+```
+The size of binary code is reduced by defining the corresponding macros.
+Additionally, you can choose faster or smaller one
+
+NOTE:  default is faster one (SP Mode)
+
+### TFM
+For smaller code 
+```
+make -f mk_min tfm
+```
+
+
+
+Run benchmark program to compare the speed of verification between TFM and SP
+
+### SP
+For faster code
+
+If you build the programs on Aarch64 system:
+```
+make -f mk_min sp_arm64
+```
+else if x86_64 system:
+```
+make -f mk_min sp_x86_64
+``` 
+then a benchmark program is generated.
+```
+./benchmark
+```
+
+To see stack and heap memory consumption
+```
+make -f mk_min debug_memory
+```
+
+
+To clean all binary files:
+```
+make -f mk_min clean
+```
+## rsa_vfy_only
+
+
+## rsa_buffer
+
+## ecc-sign-verify
+
+
+
+## Table 1: Hash algorithms for PKCS#1 Signature
 ​
 |Algorithm|Src File|Macro SW<br>Enable|<br>Disable|Note|
 |---|---|---|---|---|
@@ -21,7 +79,7 @@ Talbe 1: Hash algorithms for PKCS#1 Signature
 ​
 
 
-Table 2: Hash Algorithm APIs​​
+## Table 2: Hash Algorithm APIs​​
 
 |​Algorithm|<br>Init|API<br>Update|<br>Final|
 |---|---|---|---|
@@ -32,9 +90,9 @@ Table 2: Hash Algorithm APIs​​
 |SHA384|wc_initSha384|wc_Sha384Update|wc_Sha384Final|
 |SHA512|wc_InitSha512|wc_Sha512Update|wc_Sha512Final|
 ​
-​
 
-Table 3: RSA Signature APIs
+
+## Table 3: RSA Signature APIs
 ​
 |Padding|API|Description|
 |---|---|---|
@@ -50,7 +108,7 @@ Table 3: RSA Signature APIs
 ​
 ​
 
-​Table 4: ECC Signature APIs
+## ​Table 4: ECC Signature APIs
 ​
 ​
 |Algorithm|API|Hash|
@@ -58,6 +116,5 @@ Table 3: RSA Signature APIs
 |ECDSA|||
 |Ed25519|wc_ed25519_sign_hash|SHA512|
 |Ed488|wc_ed488_sign_hash|SHAKE256|
-​
-​
+
 

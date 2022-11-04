@@ -31,6 +31,7 @@
 #include<wolfssl/test.h>
 
 
+
 /* uncomment to show signatures */
 /* #define SHOW_SIGS_IN_EXAMPLE */
 
@@ -47,8 +48,7 @@
 #define ECC_KEY_SIZE_512 512
 #define ECC_KEY_SIZE_521 521
 #define BYTE_SZ 8
-#define LOOP_SIZE 100
-
+#define BENCH_TIME_SEC 1
 #define CHECK_RET(a, b, eLabel, msg) { \
                                         if (a != b) {                    \
                                             printf("failed %s\n", msg);  \
@@ -63,14 +63,16 @@ int do_sig_ver_test(int eccKeySz);
     static void hexdump(const void *buffer, word32 len, byte cols);
 #endif
 
-int ret;
-long cpu_time;
-double start_sec;
-double end_sec;
+// int ret;
+double start_time, total_time;
 
-int benchmark(void)
+
+int ecc_sign_verify(void)
 {
     int ret = 0;
+#ifdef DEBUG_MEMORY
+    InitMemoryTracker();
+#endif
     ret = do_sig_ver_test(ECC_KEY_SIZE_112);
     CHECK_RET(ret, 0, finished, "112 test");
     ret = do_sig_ver_test(ECC_KEY_SIZE_128);
@@ -93,13 +95,19 @@ int benchmark(void)
     CHECK_RET(ret, 0, finished, "512 test");
     ret = do_sig_ver_test(ECC_KEY_SIZE_521);
     CHECK_RET(ret, 0, finished, "521 test");
+
+
 finished:
+#ifdef DEBUG_MEMORY
+    printf("\n");
+    ShowMemoryTracker();
+    CleanupMemoryTracker();
+#endif
     return ret;
 }
 
 int do_sig_ver_test(int eccKeySz)
 {
-
     /* sha256 hash of the string "A 32-bit string to test signing" */
     unsigned char hash[32] = {
                                 0x3b, 0x07, 0x54, 0x5c, 0xfd, 0x4f, 0xb7, 0xb5,
@@ -107,10 +115,13 @@ int do_sig_ver_test(int eccKeySz)
                                 0x4a, 0x65, 0x3e, 0x72, 0x7e, 0xcd, 0xd4, 0x5b,
                                 0x1b, 0x36, 0x96, 0x96, 0xca, 0x4f, 0x9b, 0x6f
                               };
+    int ret;
     ecc_key key;
     byte* sig = NULL; // get rid of this magic number
     WC_RNG rng;
     int verified = 0;
+    int count;       // for the benchmark
+
 
     /*
      * for odd curve sizes account for mod EG:
@@ -128,9 +139,9 @@ int do_sig_ver_test(int eccKeySz)
      */
     int byteField = (eccKeySz + (BYTE_SZ - 1)) / BYTE_SZ;
     word32 maxSigSz = ECC_MAX_SIG_SIZE;
-    // word32 maxSigSz = 1000000;
-    // printf("Key size is %d, byteField = %d\n", eccKeySz, byteField);
-
+#ifndef BENCHMARK
+    printf("Key size is %d, byteField = %d\n", eccKeySz, byteField);
+#endif
     sig = (byte*) XMALLOC(maxSigSz * sizeof(byte), NULL,
                           DYNAMIC_TYPE_TMP_BUFFER);
 
@@ -138,7 +149,7 @@ int do_sig_ver_test(int eccKeySz)
         printf("Failed to allocate sig buff\n");
         return -1001;
     }
-
+    
     wolfCrypt_Init();
 
 
@@ -150,18 +161,17 @@ int do_sig_ver_test(int eccKeySz)
     ret = wc_ecc_make_key(&rng, byteField, &key);
     CHECK_RET(ret, 0, rng_done, "wc_ecc_make_key()");
 
-/* benchmark */
-    cpu_time = clock();
-    start_sec = (double)cpu_time / CLOCKS_PER_SEC;
+#ifdef BENCHMARK
+    count = 0;
+    start_time = current_time(1);
 
-    for( int i = 0; i < LOOP_SIZE; i++){
-        
+    while( BENCH_TIME_SEC > (total_time = current_time(0) - start_time ) ){
+#endif 
         ret = wc_ecc_init(&key);
         CHECK_RET(ret, 0, sig_done, "wc_ecc_init()");
 
         ret = wc_ecc_make_key(&rng, byteField, &key);
         CHECK_RET(ret, 0, rng_done, "wc_ecc_make_key()");
-//　関数入る前と後でスタックサイズ比較
         // printf("%s\n",hash);
         ret = wc_ecc_sign_hash(hash, sizeof(hash), sig, &maxSigSz, &rng, &key);
         CHECK_RET(ret, 0, rng_done, "wc_ecc_sign_hash()");
@@ -176,19 +186,18 @@ int do_sig_ver_test(int eccKeySz)
         CHECK_RET(ret, 0, rng_done, "wc_ecc_verify_hash()");
         CHECK_RET(verified, 1, rng_done, "verification check");
         verified = 0;
-        // printf(" --  OK for i:%d --\n", i);
-        // printf("%s\n",hash);
         maxSigSz = ECC_MAX_SIG_SIZE;
+#ifdef BENCHMARK        
+        count++;
     }
     
-    cpu_time = clock();
-    end_sec = (double)cpu_time / CLOCKS_PER_SEC;
-    // printf("loop size: %d\n", LOOP_SIZE);
-    // printf("time: %f seconds, \n", end_sec - start_sec);
-    printf("ECC Key Size %d\t%f seconds, %7.2f  Cycles per sec\n", \
-    eccKeySz, (end_sec - start_sec)/LOOP_SIZE, LOOP_SIZE/(end_sec - start_sec));
-    // printf("Successfully verified signature at all times. w/ ecc key size %d!\n", eccKeySz);
-/* end benchmark */
+    printf("ECC Key Size %d     %9.2f Cycles/sec\n", eccKeySz, count/total_time);
+
+#else
+
+printf("Successfully verified signature w/ ecc key size %d!\n", eccKeySz);
+
+#endif
 
 rng_done:
     wc_FreeRng(&rng);
@@ -218,18 +227,24 @@ static void hexdump(const void *buffer, word32 len, byte cols)
 
 
 int main(){
-    int ret = 0;
-
-#ifdef WOLFSSL_HAVE_SP_ECC
-    printf("================================================================\n");
-    printf("Enabled WOLFSSL_SP_ECC \n");
-#else
-    printf("================================================================\n");
-    printf("Disabled WOLFSSL_SP_ECC \n");
+#ifdef BENCHMARK
+    printf("---------------------------------------------------------------\n");
+#if defined(WOLFSSL_HAVE_SP_ECC) && !defined(SP_X86_64_FLAG) && !defined(SP_ARM64_FLAG)
+    printf("Enabled WOLFSSL_HAVE_SP_ECC \n");
+#elif defined(SP_X86_64_FLAG)
+    printf("Enabled WOLFSSL_SP_X86_64\n");
+#elif defined(SP_ARM64_FLAG)
+    printf("Enabled WOLFSSL_SP_ARM64\n");
+#elif defined(TFM_FLAG)
+    printf("Enabled TFM \n");
 #endif
-    printf("================================================================\n");
-    printf("Running ecc-sign-verify Benchmarks...\n");
-    ret = benchmark();
-    printf("================================================================\n");
-    return ret;
+    printf("---------------------------------------------------------------\n");
+    printf("Running ECC Sign Verify Benchmarks...\n");
+#endif /* BENCHMARK */
+
+#ifdef DEBUG_MEMORY
+    return StackSizeCheck(NULL, (thread_func)ecc_sign_verify);
+#else 
+    return ecc_sign_verify();
+#endif
 }
