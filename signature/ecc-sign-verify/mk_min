@@ -3,7 +3,7 @@ WOLFROOT = ../../../wolfssl
 CFLAGS = -DWOLFSSL_USER_SETTINGS -I. -I$(WOLFROOT) -Os -g
 ASFLAGS = -DWOLFSSL_USER_SETTINGS -I. -I$(WOLFROOT)
 
-OBJ =\
+OBJ=\
 	$(WOLFROOT)/wolfcrypt/src/ecc.o\
 	$(WOLFROOT)/wolfcrypt/src/sha256.o\
 	$(WOLFROOT)/wolfcrypt/src/hash.o\
@@ -12,21 +12,35 @@ OBJ =\
 	$(WOLFROOT)/wolfcrypt/src/wc_port.o\
 	$(WOLFROOT)/wolfcrypt/src/coding.o\
 	$(WOLFROOT)/wolfcrypt/src/wolfmath.o\
-	$(WOLFROOT)/wolfcrypt/src/memory.o\
-	$(WOLFROOT)/wolfcrypt/src/tfm.o\
-	$(WOLFROOT)/wolfcrypt/src/sp_int.o\
-	$(WOLFROOT)/wolfcrypt/src/sp_arm64.o\
-	$(WOLFROOT)/wolfcrypt/src/sp_x86_64.o\
-	$(WOLFROOT)/wolfcrypt/src/sp_x86_64_asm.o\
-	$(WOLFROOT)/wolfcrypt/src/cpuid.o\
+	$(WOLFROOT)/wolfcrypt/src/memory.o
+
+OBJ_SP_C32 =\
 	$(WOLFROOT)/wolfcrypt/src/sp_c32.o\
+	$(WOLFROOT)/wolfcrypt/src/sp_int.o
+
+OBJ_SP_ARM64 =\
+	$(WOLFROOT)/wolfcrypt/src/sp_arm64.o\
+	$(WOLFROOT)/wolfcrypt/src/sp_int.o
+
+OBJ_SP_X86_64 =\
+	$(WOLFROOT)/wolfcrypt/src/sp_int.o\
+	$(WOLFROOT)/wolfcrypt/src/cpuid.o\
+	$(WOLFROOT)/wolfcrypt/src/sp_x86_64.o\
+	$(WOLFROOT)/wolfcrypt/src/sp_x86_64_asm.o
+
+OBJ_TFM =\
+	$(WOLFROOT)/wolfcrypt/src/tfm.o
+
+OBJ_ALL = $(OBJ_SP_C32) $(OBJ_SP_ARM64) $(OBJ_SP_X86_64) $(OBJ_TFM)
 
 sp:CFLAGS+= -DSP_FLAG
 sp: all
 
 sp_x86_64:CFLAGS+= -DSP_X86_64_FLAG
 sp_x86_64:ASFLAGS+= -DSP_X86_64_FLAG
-sp_x86_64: all
+sp_x86_64: $(OBJ) $(OBJ_SP_X86_64)
+	$(CC) $(CFLAGS) -o ecc_sign_verify ecc_sign_verify.c $(OBJ) $(OBJ_SP_X86_64)
+	$(CC) $(CFLAGS) -DBENCHMARK -o benchmark ecc_sign_verify.c $(OBJ) $(OBJ_SP_X86_64)
 
 sp_arm64:CFLAGS+= -DSP_ARM64_FLAG
 sp_arm64: all
@@ -37,7 +51,7 @@ tfm: all
 debug_memory:CFLAGS+= -DDEBUG_MEMORY
 debug_memory: ecc_sign_verify 
 
-all : ecc_sign_verify benchmark
+all : ecc_sign_verify benchmark 
 ecc_sign_verify: $(OBJ)
 	$(CC) $(CFLAGS) -o ecc_sign_verify ecc_sign_verify.c $(OBJ)
 
@@ -45,7 +59,7 @@ benchmark: $(OBJ)
 	$(CC) $(CFLAGS) -DBENCHMARK -o benchmark ecc_sign_verify.c $(OBJ)
 
 clean:
-	rm $(OBJ) ecc_sign_verify benchmark
+	rm -f $(OBJ_ALL) ecc_sign_verify benchmark
 
 size :
 	size $(OBJ)
