@@ -39,6 +39,7 @@ OBJ_TFM := \
 
 ifeq ($(math) $(arch),sp x64) 
 ASFLAGS+= -DSP_X86_64_FLAG
+CFLAGS += -DSP_X86_64_FLAG
 OBJ += $(OBJ_SP_X86_64)
 else ifeq ($(math) $(arch),sp arm64)
 CFLAGS += -DSP_ARM64_FLAG
@@ -59,13 +60,13 @@ endif
 
 all : ecc_sign_verify bench mem
 
-ecc_sign_verify: $(OBJ)
+ecc_sign_verify: clean $(OBJ)
 	$(CC) $(CFLAGS) -o ecc_sign_verify ecc_sign_verify.c $(OBJ)
 
-bench: $(OBJ)
+bench: clean $(OBJ)
 	$(CC) $(CFLAGS) -DBENCHMARK -o ecc_sign_verify_bench ecc_sign_verify.c $(OBJ)
 
-mem: $(OBJ)
+mem: clean $(OBJ)
 	$(CC) $(CFLAGS) -DDEBUG_MEMORY -o ecc_sign_verify_mem ecc_sign_verify.c $(OBJ)
 clean:
 	rm -f ecc_sign_verify ecc_sign_verify_bench ecc_sign_verify_mem $(WOLFROOT)/wolfcrypt/src/*.o
