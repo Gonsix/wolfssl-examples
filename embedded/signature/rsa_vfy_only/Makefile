@@ -1,4 +1,4 @@
-WOLFROOT = ../../../../wolfssl
+WOLFROOT ?= ../../../../wolfssl
 
 CFLAGS = $(EX_CFLAGS) -DWOLFSSL_USER_SETTINGS -I. -I$(WOLFROOT) -Os
 ASFLAGS=-DWOLFSSL_USER_SETTINGS -I. -I$(WOLFROOT)
@@ -64,11 +64,11 @@ endif
 all: verify bench mem
 
 verify: clean $(OBJ)
-	$(CC) $(CFLAGS) -o verify verify.c $(OBJ)
+	$(CC) $(CFLAGS) -o verify verify.c $(OBJ) -lpthread
 bench: clean $(OBJ)
-	$(CC) $(CFLAGS) -DBENCHMARK -o verify_bench verify.c $(OBJ)
+	$(CC) $(CFLAGS) -DBENCHMARK -o verify_bench verify.c $(OBJ) -lpthread
 mem: clean $(OBJ)
-	$(CC) $(CFLAGS) -DDEBUG_MEMORY -o verify_mem verify.c $(OBJ)
+	$(CC) $(CFLAGS) -DDEBUG_MEMORY -o verify_mem verify.c $(OBJ) -lpthread
 clean:
 	rm -f verify verify_bench verify_mem $(WOLFROOT)/wolfcrypt/src/*.o
 size :
