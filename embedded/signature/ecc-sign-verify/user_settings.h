@@ -79,3 +79,15 @@
 #ifdef BENCHMARK
     #undef DEBUG_MEMORY
 #endif
+
+#define NONBLOCK
+#ifdef NONBLOCK
+    #define WC_ECC_NONBLOCK
+    #define WOLFSSL_SP_NONBLOCK
+    #define WOLFSSL_SP_SMALL
+    #define WOLFSSL_SP_NO_MALLOC
+    // #undef BENCHMARK
+#endif
+
+#define WOLFSSL_SP_384
+#define WOLFSSL_SP_521
