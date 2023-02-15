@@ -63,6 +63,19 @@ int verify()
 #endif
     int count;
 
+/* Variables for non-blocking RSA */
+#ifdef NONBLOCK 
+    RsaNb nb_ctx;
+    double total_blk_time;          
+    double pre_returned_t;          /*  previous recent returned time */
+    double returned_t;              /* most recent returned time */ 
+    double max_t = -1.0;            /* Maximum blocking time */ 
+    double min_t = __DBL_MAX__;     /* Minimum blocking time */ 
+    double blocking_t;              /* current blocking time */
+    int blk_count;                  
+#endif /* NONBLOCK */
+
+
 #ifdef DEBUG_MEMORY
     wolfCrypt_Init();
     InitMemoryTracker();
@@ -102,6 +115,42 @@ int verify()
     start = current_time(0);// 1 0
     while( (double)BENCH_TIME_SEC > (total_time = current_time(0) - start ) ){
 #endif
+
+#ifdef NONBLOCK        
+        if (ret == 0){
+            ret = wc_RsaSetNonBlock(&rsaKey, &nb_ctx);
+            if (ret != 0) 
+                return ret;
+
+            blk_count = 0;
+            total_blk_time = 0;
+
+            pre_returned_t = current_time(1);
+            do {
+                
+                decSigLen = wc_RsaSSL_Verify(rsa_sig_2048, sizeof(rsa_sig_2048),
+                                                decSig, sizeof(decSig), &rsaKey);
+                
+                returned_t = current_time(0);
+                blocking_t = returned_t - pre_returned_t;
+                total_blk_time += blocking_t;
+
+                if ( blocking_t > max_t ){
+                    max_t = blocking_t;
+                }
+                else if ( blocking_t < min_t ){
+                    min_t = blocking_t;
+                }
+
+                pre_returned_t = returned_t;
+                blk_count++;
+            } while (decSigLen == FP_WOULDBLOCK);
+        }
+        
+
+        if ((int)decSigLen < 0)
+                ret = (int)decSigLen;
+#else
         /* Verify the signature by decrypting the value. */
         if (ret == 0) {
             decSigLen = wc_RsaSSL_Verify(rsa_sig_2048, sizeof(rsa_sig_2048),
@@ -109,6 +158,7 @@ int verify()
             if ((int)decSigLen < 0)
                 ret = (int)decSigLen;
         }
+#endif
         /* Check the decrypted result matches the encoded digest. */
         if (ret == 0 && encSigLen != decSigLen)
             ret = -1;
@@ -127,8 +177,15 @@ int verify()
     printf("Takes %1.2f Sec for %d times,    %6.2f Cycles/sec\n", total_time, count, count/total_time);
     printf("Finished Benchmark \n");
 #else 
-    printf("Verified\n");
+    printf("Verified!\n");
 #endif
+
+#ifdef NONBLOCK
+
+    printf("    Total time : %f,   Bloking count: %d  \n",total_blk_time, blk_count);
+    printf("    Max: %2.2f micro sec,   Average: %.2f micro sec\n",\
+                     max_t*1000*1000, 1000*1000*total_blk_time/blk_count );
+#endif /* NONBLOCK*/
 
 finish: 
     /* Free the data structures */

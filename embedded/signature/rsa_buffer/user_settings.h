@@ -75,3 +75,13 @@
 #ifdef BENCHMARK
     #undef DEBUG_MEMORY
 #endif
+
+// #define NONBLOCK
+#if defined(NONBLOCK)
+    #define WC_RSA_NONBLOCK
+    #define TFM_TIMING_RESISTANT
+    #define WOLFSSL_SP_NONBLOCK
+    #define WOLFSSL_SP_SMALL
+    #define WOLFSSL_SP_NO_MALLOC
+    // #undef BENCHMARK
+#endif /* NONBLOCK && TFM_FLAG*/
