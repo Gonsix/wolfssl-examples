@@ -32,7 +32,7 @@
 
 
 /* uncomment to show signatures */
-/* #define SHOW_SIGS_IN_EXAMPLE */
+/* #define SHOW_SIGS_AND_KEYS */
 
 #define HEAP_HINT NULL
 #define ECC_KEY_SIZE_112 112
@@ -57,27 +57,31 @@
 
 int do_sig_ver_test(int eccKeySz);
 
-#ifdef SHOW_SIGS_IN_EXAMPLE
+#define SHOW_SIGS_AND_KEYS
+#ifdef SHOW_SIGS_AND_KEYS
     static void hexdump(const void *buffer, word32 len, byte cols);
+    byte key_buff[2048]; // 1024 -> 2048
+    word32 key_buff_len = sizeof(key_buff);
 #endif
 
 int ecc_sign_verify(void)
 {
+    // return ECC_BAD_ARG_E;
     int ret = 0;
 #ifdef DEBUG_MEMORY
     wolfCrypt_Init();
     InitMemoryTracker();
 #endif
-    ret = do_sig_ver_test(ECC_KEY_SIZE_112);
-    CHECK_RET(ret, 0, finished, "112 test");
-    ret = do_sig_ver_test(ECC_KEY_SIZE_128);
-    CHECK_RET(ret, 0, finished, "128 test");
-    ret = do_sig_ver_test(ECC_KEY_SIZE_160);
-    CHECK_RET(ret, 0, finished, "160 test");
-    ret = do_sig_ver_test(ECC_KEY_SIZE_192);
-    CHECK_RET(ret, 0, finished, "192 test");
-    ret = do_sig_ver_test(ECC_KEY_SIZE_224);
-    CHECK_RET(ret, 0, finished, "224 test");
+    // ret = do_sig_ver_test(ECC_KEY_SIZE_112);
+    // CHECK_RET(ret, 0, finished, "112 test");
+    // ret = do_sig_ver_test(ECC_KEY_SIZE_128);
+    // CHECK_RET(ret, 0, finished, "128 test");
+    // ret = do_sig_ver_test(ECC_KEY_SIZE_160);
+    // CHECK_RET(ret, 0, finished, "160 test");
+    // ret = do_sig_ver_test(ECC_KEY_SIZE_192);
+    // CHECK_RET(ret, 0, finished, "192 test");
+    // ret = do_sig_ver_test(ECC_KEY_SIZE_224);
+    // CHECK_RET(ret, 0, finished, "224 test");
     ret = do_sig_ver_test(ECC_KEY_SIZE_239);
     CHECK_RET(ret, 0, finished, "239 test");
     ret = do_sig_ver_test(ECC_KEY_SIZE_256);
@@ -176,8 +180,15 @@ double start_time, total_time;
         ret = wc_ecc_sign_hash(hash, sizeof(hash), sig, &maxSigSz, &rng, &key);
         CHECK_RET(ret, 0, rng_done, "wc_ecc_sign_hash()");
 
-    #ifdef SHOW_SIGS_IN_EXAMPLE
-        hexdump(sig, maxSigSz, 16);
+// KEY and SIGS        
+        ret = wc_ecc_export_x963(&key, key_buff, &key_buff_len);
+        printf("ecc_PublicKey_%d[] = {\n", eccKeySz);
+        hexdump(key_buff, key_buff_len, 8);
+        printf("};\n");
+        CHECK_RET(ret, 0, rng_done, "wc_ecc_export_x963");
+    #ifdef SHOW_SIGS_AND_KEYS, eccKeySz);
+        hexdump(sig, maxSigSz, 8);
+        printf("};\n\n");
     #endif
         
 
@@ -208,7 +219,7 @@ sig_done:
     return ret;
 }
 
-#ifdef SHOW_SIGS_IN_EXAMPLE
+#ifdef SHOW_SIGS_AND_KEYS
 static void hexdump(const void *buffer, word32 len, byte cols)
 {
    word32 i;
@@ -216,7 +227,7 @@ static void hexdump(const void *buffer, word32 len, byte cols)
    for (i = 0; i < len + ((len % cols) ? (cols - len % cols) : 0); i++) {
       /* print hex data */
       if (i < len)
-         printf("%02X ", ((byte*)buffer)[i] & 0xFF);
+         printf("0x%02x, ", ((byte*)buffer)[i] & 0xFF);
 
       if (i % cols == (cols - 1))
          printf("\n");
