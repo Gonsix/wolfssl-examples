@@ -1,6 +1,6 @@
 /* ecc_sign_verify.c
  *
- * Copyright (C) 2006-2020 wolfSSL Inc.
+ * Copyright (C) 2006-2023 wolfSSL Inc.
  *
  * This file is part of wolfSSL. (formerly known as CyaSSL)
  *
@@ -117,17 +117,6 @@ int do_sig_ver_test(int eccKeySz)
     WC_RNG rng;
     int verified = 0;
 
-#ifdef NONBLOCK
-    ecc_nb_ctx_t nb_ctx;
-    double total_blk_time;          
-    double pre_returned_t;          /*  previous recent returned time */
-    double returned_t;              /* most recent returned time */ 
-    double max_t = -1.0;            /* Maximum blocking time */ 
-    double min_t = __DBL_MAX__;     /* Minimum blocking time */ 
-    double blocking_t;              /* current blocking time */
-    int blk_count;                  
-    
-#endif
 
 /* Variables for Benchmark */
 double start_time, total_time;
@@ -181,7 +170,6 @@ double start_time, total_time;
 
         ret = wc_ecc_make_key(&rng, byteField, &key);
         CHECK_RET(ret, 0, rng_done, "wc_ecc_make_key()");
-        // printf("%s\n",hash);
         ret = wc_ecc_sign_hash(hash, sizeof(hash), sig, &maxSigSz, &rng, &key);
         CHECK_RET(ret, 0, rng_done, "wc_ecc_sign_hash()");
 
@@ -189,37 +177,9 @@ double start_time, total_time;
         hexdump(sig, maxSigSz, 16);
     #endif
 
-#ifdef NONBLOCK
-        ret = wc_ecc_set_nonblock(&key, &nb_ctx);
-        CHECK_RET(ret, 0, rng_done, "wc_ecc_set_nonblock()");
-
-        blk_count = 0;
-        pre_returned_t = current_time(1);
-        // blocking_t = start_blk_time;
-
-        do {
-            
-            ret = wc_ecc_verify_hash(sig, maxSigSz, hash, sizeof(hash), 
-                                                        &verified, &key);
-            returned_t = current_time(0);
-            blocking_t = returned_t - pre_returned_t;
-            total_blk_time += blocking_t;
-
-            if ( blocking_t > max_t ){
-                max_t = blocking_t;
-            }
-            else if ( blocking_t < min_t ){
-                min_t = blocking_t;
-            }
-
-            pre_returned_t = returned_t;
-            blk_count++;
-        } while (ret == FP_WOULDBLOCK);
-
-#else 
         ret = wc_ecc_verify_hash(sig, maxSigSz, hash, sizeof(hash), 
                                                             &verified, &key);
-#endif /* NONBLOCK */
+
 
         CHECK_RET(ret, 0, rng_done, "wc_ecc_verify_hash()");
         CHECK_RET(verified, 1, rng_done, "verification check");
@@ -234,13 +194,6 @@ double start_time, total_time;
 #else
 
 printf("Successfully verified signature w/ ecc key size %d!\n", eccKeySz);
-
-if (eccKeySz >= ECC_KEY_SIZE_256){
-    printf("    Total time : %f,   Bloking count: %d  \n",total_blk_time, blk_count);
-    printf("    Max: %2.2f micro sec,   Average: %.2f micro sec\n",\
-                     max_t*1000*1000, 1000*1000*total_blk_time/blk_count );
-
-}
 
 #endif
 
