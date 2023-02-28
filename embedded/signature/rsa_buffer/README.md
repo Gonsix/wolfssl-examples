@@ -1,7 +1,4 @@
-# RSA Signature Test Example 
-
-### PKCS#1.5 and PSS
-To switch from PKCS#1.5 to PSS, `#define PSS_PADDING` in user_settings.h
+# RSA Signature Test Example
 
 Demonstrates using a hash digest to sign and verify a signature using RSA
 
@@ -89,16 +86,6 @@ current Bytes    =         0
 stack used = 12392
 ```
 
-
-# Non-blocking
-
-- RSA non-blocking mode only supported using TFM.
-
-To make Non-blocking RSA, 
-```
-make nonblock math=tfm
-```
-then `rsa_sign_verify_nonblock` is generated.
 
 Best wishes in all your testing!
 

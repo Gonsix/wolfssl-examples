@@ -12,7 +12,6 @@ OBJ = \
 	$(WOLFROOT)/wolfcrypt/src/wc_port.o\
 	$(WOLFROOT)/wolfcrypt/src/coding.o\
 	$(WOLFROOT)/wolfcrypt/src/memory.o\
-	$(WOLFROOT)/wolfcrypt/src/wolfmath.o\
 
 OBJ_SP_C32 := \
 	$(WOLFROOT)/wolfcrypt/src/sp_int.o\
@@ -34,6 +33,7 @@ OBJ_SP_X86_64 := \
 	$(WOLFROOT)/wolfcrypt/src/sp_x86_64_asm.o\
 
 OBJ_TFM := \
+	$(WOLFROOT)/wolfcrypt/src/wolfmath.o\
 	$(WOLFROOT)/wolfcrypt/src/tfm.o\
 
 
@@ -60,20 +60,17 @@ CFLAGS += -DSP_C64_FLAG
 OBJ += $(OBJ_SP_C64)
 endif
 
-all: rsa_sign_verify bench mem 
-rsa_sign_verify: clean $(OBJ)
-	$(CC) $(CFLAGS) -o rsa_sign_verify rsa_sign_verify.c $(OBJ)
+all: verify sign bench mem
 
+verify: clean $(OBJ)
+	$(CC) $(CFLAGS) -o verify verify.c $(OBJ) 
+sign: clean $(OBJ)
+	$(CC) $(CFLAGS) -o sign sign.c $(OBJ) 
 bench: clean $(OBJ)
-	$(CC) $(CFLAGS) -DBENCHMARK -o rsa_sign_verify_bench rsa_sign_verify.c $(OBJ) -lpthread
+	$(CC) $(CFLAGS) -DBENCHMARK -o verify_bench verify.c $(OBJ) -lpthread
 mem: clean $(OBJ)
-	$(CC) $(CFLAGS) -DDEBUG_MEMORY -o rsa_sign_verify_mem rsa_sign_verify.c $(OBJ) -lpthread
-
-nonblock: CFLAGS += -DNONBLOCK
-nonblock: clean $(OBJ) 
-	$(CC) -DNONBLOCK $(CFLAGS) -DDEBUG_MEMORY  -o rsa_sign_verify_nonblock rsa_sign_verify_nonblock.c $(OBJ) -lpthread
-
+	$(CC) $(CFLAGS) -DDEBUG_MEMORY -o verify_mem verify.c $(OBJ) -lpthread
 clean:
-	rm -f rsa_sign_verify rsa_sign_verify_bench rsa_sign_verify_mem rsa_sign_verify_nonblock $(WOLFROOT)/wolfcrypt/src/*.o
+	rm -f sign verify verify_bench verify_mem $(WOLFROOT)/wolfcrypt/src/*.o
 size :
 	size $(OBJ) sign verify 

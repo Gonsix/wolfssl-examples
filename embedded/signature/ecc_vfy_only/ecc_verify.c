@@ -45,17 +45,7 @@
 #define ECC_KEY_SIZE_521 521
 #define BYTE_SZ 8
 
-#define IDX_KEY_112 0 
-#define IDX_KEY_128 1 
-#define IDX_KEY_160 2 
-#define IDX_KEY_192 3 
-#define IDX_KEY_224 4 
-#define IDX_KEY_239 5 
-#define IDX_KEY_256 6 
-#define IDX_KEY_320 7 
-#define IDX_KEY_384 8
-#define IDX_KEY_512 9
-#define IDX_KEY_521 10
+
 int idx_key(int keysize);
 
 
@@ -239,27 +229,27 @@ int main(){
 int idx_key(int keysize){
     switch(keysize){
         case ECC_KEY_SIZE_112:
-            return IDX_KEY_112;
+            return 0;
         case ECC_KEY_SIZE_128:
-            return IDX_KEY_128;
+            return 1;
         case ECC_KEY_SIZE_160:
-            return IDX_KEY_160;
+            return 2;
         case ECC_KEY_SIZE_192:
-            return IDX_KEY_192;
+            return 3;
         case ECC_KEY_SIZE_224:
-            return IDX_KEY_224;
+            return 4;
         case ECC_KEY_SIZE_239:
-            return IDX_KEY_239;
+            return 5;
         case ECC_KEY_SIZE_256:
-            return IDX_KEY_256;
+            return 6;
         case ECC_KEY_SIZE_320:
-            return IDX_KEY_320;
+            return 7;
         case ECC_KEY_SIZE_384:
-            return IDX_KEY_384;
+            return 8;
         case ECC_KEY_SIZE_512:
-            return IDX_KEY_512;
+            return 9;
         case ECC_KEY_SIZE_521:
-            return IDX_KEY_521;
+            return 10;
         default:
             return -1;
     } 
